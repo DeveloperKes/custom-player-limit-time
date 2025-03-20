@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "custom-player-limit-time",
+  "version": "${version}",
+  "name": "Custom Player Limit Time",
+  "description": "This is an example description! Tell everyone what your mod is about!",
+  "authors": [
+    "KesGroom"
+  ],
+  "contact": {
+    "homepage": "https://kesdevs.com/",
+    "sources": "pending..."
+  },
+  "license": "CC0-1.0",
+  "icon": "assets/custom-player-limit-time/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.kesgroom.cplt.CustomPlayerLimitTime"
+    ],
+    "fabric-datagen": [
+      "net.kesgroom.cplt.CustomPlayerLimitTimeDataGenerator"
+    ],
+    "client": [
+      "net.kesgroom.cplt.CustomPlayerLimitTimeClient"
+    ]
+  },
+  "mixins": [
+    "custom-player-limit-time.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.10",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}
