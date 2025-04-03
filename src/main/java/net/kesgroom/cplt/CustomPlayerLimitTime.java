@@ -5,19 +5,20 @@ import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.api.ModInitializer;
 
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.kesgroom.cplt.models.Player;
+import net.kesgroom.cplt.models.Session;
+import net.kesgroom.cplt.orm.DatabaseManager;
+import net.kesgroom.cplt.orm.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+
+import java.sql.SQLException;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -43,57 +44,70 @@ public class CustomPlayerLimitTime implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            registerCommands(dispatcher);
-        });
+        try {
+            DatabaseManager.getConnection();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        // Crear las tablas
+        List<Class<? extends Entity>> entities = List.of(
+                Player.class,
+                Session.class
+        );
+        // Conectar a BD con MySQL
+        DatabaseManager.initialize(entities);
 
-        manager = new CustomPlayTimeManager();
-        manager.loadPlayTimes();
-        registerMidnightReset();
-
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            ServerPlayerEntity player = handler.player;
-            UUID playerId = player.getUuid();
-            if (IS_LIMIT_TIME()) {
-                if (manager.getBanUserByUUID(playerId)) {
-                    player.networkHandler.disconnect(Text.literal("Has alcanzado tu límite de tiempo de juego diario. Vuelve mañana."));
-                    return; // Salir del evento sin continuar
-                }
-                CustomPlayerInfo playerSaved = manager.getPlayer(playerId);
-                if (playerSaved == null) {
-                    CustomPlayerInfo playerInfoTemplate = new CustomPlayerInfo(MAX_PLAY_TIME(), player.getName());
-                    manager.saveNewPlayer(playerId, playerInfoTemplate);
-                } else {
-                    manager.startSession(playerId);
-                }
-
-                long remainingTime = manager.getPlayTime(playerId);
-
-                if (remainingTime > 0) {
-                    String remainingTimeFormatted = formatRemainingTime(remainingTime);
-                    String message = String.format("Te quedán %s.. ¡Aprovecha tu tiempo!", remainingTimeFormatted);
-                    player.sendMessage(Text.literal(message).formatted(Formatting.GREEN));
-                    if (IS_LIMIT_TIME()) startTimerPlayer(playerId, player);
-                }
-            } else {
-                player.sendMessage(Text.literal("El limitador de tiempo esta apagado").formatted(Formatting.GOLD));
-            }
-        });
-
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            if (IS_LIMIT_TIME()) {
-                ServerPlayerEntity player = handler.player;
-                UUID playerId = player.getUuid();
-
-                stopTimerPlayer(playerId);
-
-                CustomPlayerInfo playerSaved = manager.getPlayer(playerId);
-                if (playerSaved != null) {
-                    long sessionTime = System.currentTimeMillis() - playerSaved.sessionStartAgo;
-                    manager.updatePlayTime(playerId, playerSaved.remainingTime - sessionTime > 0 ? playerSaved.remainingTime - sessionTime : 0);
-                }
-            }
-        });
+//        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+//            registerCommands(dispatcher);
+//        });
+//
+//        manager = new CustomPlayTimeManager();
+//        manager.loadPlayTimes();
+//        registerMidnightReset();
+//
+//        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+//            ServerPlayerEntity player = handler.player;
+//            UUID playerId = player.getUuid();
+//            if (IS_LIMIT_TIME()) {
+//                if (manager.getBanUserByUUID(playerId)) {
+//                    player.networkHandler.disconnect(Text.literal("Has alcanzado tu límite de tiempo de juego diario. Vuelve mañana."));
+//                    return; // Salir del evento sin continuar
+//                }
+//                CustomPlayerInfo playerSaved = manager.getPlayer(playerId);
+//                if (playerSaved == null) {
+//                    CustomPlayerInfo playerInfoTemplate = new CustomPlayerInfo(MAX_PLAY_TIME(), player.getName());
+//                    manager.saveNewPlayer(playerId, playerInfoTemplate);
+//                } else {
+//                    manager.startSession(playerId);
+//                }
+//
+//                long remainingTime = manager.getPlayTime(playerId);
+//
+//                if (remainingTime > 0) {
+//                    String remainingTimeFormatted = formatRemainingTime(remainingTime);
+//                    String message = String.format("Te quedán %s.. ¡Aprovecha tu tiempo!", remainingTimeFormatted);
+//                    player.sendMessage(Text.literal(message).formatted(Formatting.GREEN));
+//                    if (IS_LIMIT_TIME()) startTimerPlayer(playerId, player);
+//                }
+//            } else {
+//                player.sendMessage(Text.literal("El limitador de tiempo esta apagado").formatted(Formatting.GOLD));
+//            }
+//        });
+//
+//        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+//            if (IS_LIMIT_TIME()) {
+//                ServerPlayerEntity player = handler.player;
+//                UUID playerId = player.getUuid();
+//
+//                stopTimerPlayer(playerId);
+//
+//                CustomPlayerInfo playerSaved = manager.getPlayer(playerId);
+//                if (playerSaved != null) {
+//                    long sessionTime = System.currentTimeMillis() - playerSaved.sessionStartAgo;
+//                    manager.updatePlayTime(playerId, playerSaved.remainingTime - sessionTime > 0 ? playerSaved.remainingTime - sessionTime : 0);
+//                }
+//            }
+//        });
     }
 
     private static void startTimerPlayer(UUID playerId, ServerPlayerEntity player) {
