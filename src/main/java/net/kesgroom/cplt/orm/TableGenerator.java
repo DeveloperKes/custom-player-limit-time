@@ -68,7 +68,7 @@ public class TableGenerator {
             if (field.isAnnotationPresent(ManyToOne.class)) {
                 String fkName = field.getAnnotation(ManyToOne.class).foreignKey();
                 if (fkName.isEmpty()) fkName = field.getName() + "_id";
-                columns.add(String.format("%s %s", fkName, ));
+                columns.add(String.format("%s %s", fkName, ""));
                 foreignKeys.add("FOREIGN KEY (" + fkName + ") REFERENCES " +
                         field.getType().getSimpleName().toLowerCase() + "()");
             }
