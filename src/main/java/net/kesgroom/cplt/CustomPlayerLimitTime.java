@@ -6,11 +6,10 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 
 import net.kesgroom.cplt.commands.RegisterCommands;
 import net.kesgroom.cplt.events.*;
+import net.kesgroom.cplt.utils.Intervals;
 
 
 public class CustomPlayerLimitTime implements ModInitializer {
-
-
     @Override
     public void onInitialize() {
         // Se carga la configuración
@@ -22,9 +21,11 @@ public class CustomPlayerLimitTime implements ModInitializer {
         // Se inician los eventos
         PlayerEvents.joinEvent();
         PlayerEvents.disconnectEvent();
-        TimeResetEvent.registerMidnightReset();
-        WarningEvents.registerWarningAlert();
-        BanEvent.registerBanPlayers();
-    }
+        TimeRemainingEvent.activeIntervalForSessions();
+        TimeAccumulateEvent.activeIntervalForSessions();
+        BanEvent.activeIntervalForSessions();
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() ->
+                Intervals.getInstance().stopSchedulers()));
+    }
 }

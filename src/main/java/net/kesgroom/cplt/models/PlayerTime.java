@@ -15,7 +15,7 @@ public class PlayerTime implements Entity {
                         remaining_time BIGINT DEFAULT %d,
                         last_accumulation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         player_uuid VARCHAR(36) NOT NULL,
-                        FOREIGN KEY (player_uuid) REFERENCES players(uuid)
+                        FOREIGN KEY (player_uuid) REFERENCES players(uuid) ON DELETE CASCADE
                     );
                 """, ConfigManager.getInstance().getMaxTime());
     }
@@ -30,10 +30,23 @@ public class PlayerTime implements Entity {
                 """, uuid);
     }
 
-    public String getAllPlayersTime() {
-        return """
-                SELECT pt.id, pt.remaining_time, p.uuid, pt.last_accumulation_date FROM player_time as pt
+    public String getPlayersNearBanned() {
+        int near_time = Math.max(1, (int) (ConfigManager.getInstance().getMaxTime() * 0.05));
+        return String.format("""
+                SELECT pt.id, pt.remaining_time, p.uuid, pt.last_accumulation_date, s.connect FROM player_time AS pt
                 INNER JOIN players p ON pt.player_uuid = p.uuid
+                INNER JOIN sessions s ON pt.player_uuid = s.player_uuid
+                WHERE s.connect = 1 AND pt.remaining_time < %d AND pt.remaining_time > 0
+                ORDER BY pt.id DESC
+                """, near_time);
+    }
+
+    public String getPlayersToBan() {
+        return """
+                SELECT pt.id, pt.remaining_time, p.uuid, pt.last_accumulation_date, s.connect FROM player_time AS pt
+                INNER JOIN players p ON pt.player_uuid = p.uuid
+                INNER JOIN sessions s ON pt.player_uuid = s.player_uuid
+                WHERE s.connect = 1 AND pt.remaining_time == 0
                 ORDER BY pt.id DESC
                 """;
     }
@@ -41,9 +54,9 @@ public class PlayerTime implements Entity {
     public String getPlayerWithoutAccumulation() {
         LocalDate today = LocalDate.now();
         return String.format("""
-                SELECT pt.id, pt.remaining_time, p.uuid FROM player_time as pt
+                SELECT pt.id, pt.remaining_time, p.uuid, pt.last_accumulation_date FROM player_time AS pt
                 INNER JOIN players p ON pt.player_uuid = p.uuid
-                WHERE last_accumulation_date < '%s'
+                WHERE pt.last_accumulation_date < '%s'
                 ORDER BY pt.id DESC
                 """, Date.valueOf(today));
     }
@@ -60,4 +73,13 @@ public class PlayerTime implements Entity {
                 UPDATE player_time SET remaining_time = %d WHERE player_uuid = '%s';
                 """, time, uuid);
     }
+
+    public String updateLastAccumulation(String uuid) {
+        LocalDate today = LocalDate.now();
+        return String.format("""
+                UPDATE player_time SET last_accumulation_date = '%s' WHERE player_uuid = '%s';
+                """, Date.valueOf(today), uuid);
+    }
+
+
 }

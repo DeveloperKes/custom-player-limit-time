@@ -8,6 +8,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SessionService {
 
@@ -18,7 +20,7 @@ public class SessionService {
             if (rs.next()) {
                 SessionManager sessionManager = new SessionManager();
 
-                sessionManager.setEnded(rs.getInt("ended") == 1);
+                sessionManager.setConnect(rs.getInt("connect") == 1);
                 sessionManager.setLogin_time(rs.getTimestamp("login_time"));
 
                 return sessionManager;
@@ -29,6 +31,26 @@ public class SessionService {
         }
     }
 
+    public List<SessionManager> getSessionsConnect() {
+        List<SessionManager> sessions = new ArrayList<>();
+        try (Connection conn = DatabaseManager.getConnection(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sessionModel.getSessionsConnect())) {
+
+            while (rs.next()) {
+                SessionManager sessionManager = new SessionManager();
+
+                sessionManager.setConnect(rs.getInt("connect") == 1);
+                sessionManager.setLogin_time(rs.getTimestamp("login_time"));
+                sessionManager.setUuid(rs.getString("uuid"));
+                sessions.add(sessionManager);
+            }
+
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load config", e);
+        }
+        return sessions;
+    }
+
     public void createSession(String uuid) {
         try (Connection conn = DatabaseManager.getConnection(); Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(sessionModel.saveNewSession(uuid));
@@ -37,9 +59,9 @@ public class SessionService {
         }
     }
 
-    public int endSession(String uuid) {
+    public void endSession(String uuid) {
         try (Connection conn = DatabaseManager.getConnection(); Statement stmt = conn.createStatement()) {
-            return stmt.executeUpdate(sessionModel.endCurrentSession(uuid));
+            stmt.executeUpdate(sessionModel.endCurrentSession(uuid));
         } catch (SQLException e) {
             throw new RuntimeException("Failed to load config", e);
         }

@@ -28,6 +28,7 @@ public class PlayerEvents {
             PlayerManager playerManager = playerService.getPlayer(uuid);
             if (playerManager == null) registerEvent(player);
             else {
+                sessionService.updateLoginTime(uuid);
                 if (ConfigManager.getInstance().getActive()) {
                     if (playerManager.getBanned()) {
                         player.networkHandler.disconnect(Text.literal("Has alcanzado tu límite de tiempo de juego acumulado. Vuelve mañana."));
@@ -58,6 +59,7 @@ public class PlayerEvents {
                         long remaining = currentTime.getRemaining_time() - sessionTime;
                         currentTime.setRemaining_time(remaining);
                         playerTimeService.updatePlayerTime(uuid, Math.max(remaining, 0));
+                        sessionService.endSession(uuid);
                         if (remaining <= 0) {
                             playerService.banPlayer(uuid);
                         }
@@ -73,11 +75,19 @@ public class PlayerEvents {
         Text subtitle = Text.literal("No podrás moverte, espera un momento").formatted(Formatting.DARK_GRAY);
         TitleHelper.sendTitle(player, title, subtitle, 10, 50, 20);
         playerService.freezePlayer(player, true);
-        int res = playerService.registerPlayer(player.getUuid().toString(), player.getName().getString());
+        String uuid = player.getUuid().toString();
+        int res = playerService.registerPlayer(uuid, player.getName().getString());
         if (res == 1) {
+            SessionManager currentSession = sessionService.getSession(uuid);
+            if (currentSession == null) sessionService.createSession(uuid);
+            PlayerTimeManager currentTime = playerTimeService.getPlayerTime(uuid);
+            if (currentTime == null) playerTimeService.createPlayerTime(uuid);
             playerService.freezePlayer(player, false);
             Text registerTitle = Text.literal("¡Registrado!").formatted(Formatting.GOLD);
-            Text registerSubtitle = Text.literal(String.format("Tiempo restante: %s", Formats.formatRemainingTime(ConfigManager.getInstance().getMaxTime()))).formatted(Formatting.GRAY);
+            Text registerSubtitle =
+                    ConfigManager.getInstance().getActive()
+                            ? Text.literal(String.format("Tiempo restante: %s", Formats.formatRemainingTime(ConfigManager.getInstance().getMaxTime()))).formatted(TitleHelper.choiceColorByRemainingTime(ConfigManager.getInstance().getMaxTime()))
+                            : Text.literal("El límite de tiempo esta desactivado").formatted(Formatting.GRAY);
 
             TitleHelper.sendTitle(player, registerTitle, registerSubtitle, 10, 70, 20);
         } else

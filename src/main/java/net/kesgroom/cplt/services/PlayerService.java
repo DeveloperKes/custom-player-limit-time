@@ -66,9 +66,9 @@ public class PlayerService {
         }
     }
 
-    public int unbanPlayer(String uuid) {
+    public void unbanPlayer(String uuid) {
         try (Connection conn = DatabaseManager.getConnection(); Statement stmt = conn.createStatement()) {
-            return stmt.executeUpdate(playerModel.unbanPlayer(uuid));
+            stmt.executeUpdate(playerModel.unbanPlayer(uuid));
         } catch (SQLException e) {
             throw new RuntimeException("Failed to load config", e);
         }

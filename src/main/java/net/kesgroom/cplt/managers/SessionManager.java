@@ -4,7 +4,8 @@ import java.sql.Timestamp;
 
 public class SessionManager {
     private Timestamp login_time;
-    private boolean ended;
+    private boolean connect;
+    private String uuid;
 
     public SessionManager() {
 
@@ -14,15 +15,23 @@ public class SessionManager {
         return login_time;
     }
 
-    public boolean getEnded() {
-        return ended;
+    public boolean getConnect() {
+        return connect;
     }
 
-    public void setEnded(boolean ended) {
-        this.ended = ended;
+    public void setConnect(boolean connect) {
+        this.connect = connect;
     }
 
     public void setLogin_time(Timestamp login_time) {
         this.login_time = login_time;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
     }
 }

@@ -4,8 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 
-import net.kesgroom.cplt.managers.ConfigManager;
-import net.kesgroom.cplt.managers.PlayerManager;
+import net.kesgroom.cplt.managers.*;
 import net.kesgroom.cplt.services.ConfigService;
 import net.kesgroom.cplt.services.PlayerService;
 import net.kesgroom.cplt.services.PlayerTimeService;
@@ -13,6 +12,7 @@ import net.kesgroom.cplt.utils.Alerts;
 import net.kesgroom.cplt.utils.Formats;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 
@@ -30,6 +30,9 @@ public class RegisterCommands {
                         ServerWorld world = source.getWorld();
                         configService.starTimer();
                         ConfigManager.getInstance().setActive(true);
+                        BanIntervalManager.getInstance(source.getServer()).startInterval();
+                        TimeRemainingManager.getInstance(source.getServer()).startInterval();
+                        TimeAccumulateManager.getInstance().startInterval();
                         Alerts.titleAllUsers(world, "¡Restricción activada!", null);
                     } else
                         context.getSource().sendFeedback(() -> Text.literal("La restricción de tiempo ya esta activa."), true);
@@ -43,6 +46,9 @@ public class RegisterCommands {
                         ServerWorld world = source.getWorld();
                         configService.stopTimer();
                         ConfigManager.getInstance().setActive(false);
+                        BanIntervalManager.getInstance(source.getServer()).stopInterval();
+                        TimeRemainingManager.getInstance(source.getServer()).stopInterval();
+                        TimeAccumulateManager.getInstance().stopInterval();
                         Alerts.titleAllUsers(world, "¡Restricción desactivada!", "Sin límite de tiempo");
                     } else
                         context.getSource().sendFeedback(() -> Text.literal("La restricción de tiempo ya esta inactiva."), true);
@@ -105,10 +111,24 @@ public class RegisterCommands {
                     return 1;
                 })));
 
-        dispatcher.register(CommandManager.literal("getlimittime").requires(source -> source.hasPermissionLevel(1)) // Solo para usuarios OP
+        dispatcher.register(CommandManager.literal("getlimittime").requires(source -> source.hasPermissionLevel(0))
                 .executes(context -> {
                     String formatted = Formats.formatRemainingTime(ConfigManager.getInstance().getMaxTime());
                     context.getSource().sendFeedback(() -> Text.literal(String.format("El límite de tiempo actual es: %s", formatted)), true);
+                    return 1;
+                }));
+
+        dispatcher.register(CommandManager.literal("getmytime").requires(source -> source.hasPermissionLevel(0))
+                .executes(context -> {
+                    ServerPlayerEntity player = context.getSource().getPlayer();
+                    assert player != null;
+                    String uuid = player.getUuid().toString();
+                    PlayerTimeManager playerTimeManager = playerTimeService.getPlayerTime(uuid);
+                    if (playerTimeManager != null) {
+                        long remaining = playerTimeManager.getRemaining_time();
+                        String formatted = Formats.formatRemainingTime(remaining);
+                        context.getSource().sendFeedback(() -> Text.literal(String.format("Tú tiempo de juego restante es: %s", formatted)), true);
+                    }
                     return 1;
                 }));
     }

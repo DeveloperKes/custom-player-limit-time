@@ -20,6 +20,7 @@ public class PlayerTimeService {
             if (rs.next()) {
                 PlayerTimeManager playerTimeManager = new PlayerTimeManager();
                 playerTimeManager.setRemaining_time(rs.getInt("remaining_time"));
+                playerTimeManager.setUuid(uuid);
                 return playerTimeManager;
             }
             return null;
@@ -44,9 +45,17 @@ public class PlayerTimeService {
         }
     }
 
-    public List<PlayerTimeManager> getAllPlayersTime() {
+    public void updateLastAccumulation(String uuid) {
+        try (Connection conn = DatabaseManager.getConnection(); Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(playerTimeModel.updateLastAccumulation(uuid));
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load config", e);
+        }
+    }
+
+    public List<PlayerTimeManager> getPlayersToBan() {
         List<PlayerTimeManager> playersTime = new ArrayList<>();
-        try (Connection conn = DatabaseManager.getConnection(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(playerTimeModel.getAllPlayersTime())) {
+        try (Connection conn = DatabaseManager.getConnection(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(playerTimeModel.getPlayersToBan())) {
             while (rs.next()) {
                 PlayerTimeManager playerTimeManager = new PlayerTimeManager();
                 playerTimeManager.setUuid(rs.getString("uuid"));

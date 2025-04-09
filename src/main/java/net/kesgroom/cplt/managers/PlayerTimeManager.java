@@ -34,4 +34,5 @@ public class PlayerTimeManager {
     public void setLast_accumulation_date(Date last_accumulation_date) {
         this.last_accumulation_date = last_accumulation_date;
     }
+
 }
