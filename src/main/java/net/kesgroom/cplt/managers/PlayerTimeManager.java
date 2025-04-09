@@ -6,6 +6,7 @@ public class PlayerTimeManager {
     private long remaining_time;
     private String uuid;
     private Date last_accumulation_date;
+    private String name;
 
     public PlayerTimeManager() {
 
@@ -35,4 +36,11 @@ public class PlayerTimeManager {
         this.last_accumulation_date = last_accumulation_date;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 }

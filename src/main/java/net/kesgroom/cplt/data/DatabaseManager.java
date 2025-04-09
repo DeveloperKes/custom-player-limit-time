@@ -24,9 +24,9 @@ public class DatabaseManager {
     public static Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
             connection = DriverManager.getConnection(
-                    "url-host",
-                    "username",
-                    "password"
+                    "jdbc:mysql://localhost:3306/dev",
+                    "root",
+                    "kelu0801"
             );
         }
         return connection;

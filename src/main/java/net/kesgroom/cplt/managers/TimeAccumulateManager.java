@@ -1,21 +1,23 @@
 package net.kesgroom.cplt.managers;
 
 import net.kesgroom.cplt.services.PlayerTimeService;
-import net.kesgroom.cplt.utils.Interval;
 
 import java.time.LocalTime;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class TimeAccumulateManager {
     private static final PlayerTimeService playerTimeService = new PlayerTimeService();
 
     private static TimeAccumulateManager instance;
-    private static final Interval interval = new Interval();
+    private final Runnable task;
+    private final ScheduledExecutorService scheduler;
 
     private TimeAccumulateManager() {
-        Runnable task = TimeAccumulateManager::searchSessions;
-        interval.setTask(task);
+        task = TimeAccumulateManager::searchSessions;
+        scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 
     public static TimeAccumulateManager getInstance() {
@@ -26,7 +28,6 @@ public class TimeAccumulateManager {
     private static void searchSessions() {
         List<PlayerTimeManager> playersTime = playerTimeService.getPlayersForAccumulation();
         if (isAccumulationTime() && !playersTime.isEmpty()) {
-            System.out.println("Se ejecuta el aumento");
             for (PlayerTimeManager player : playersTime) {
                 playerTimeService.updatePlayerTime(player.getUuid(), player.getRemaining_time() + ConfigManager.getInstance().getMaxTime());
                 playerTimeService.updateLastAccumulation(player.getUuid());
@@ -39,10 +40,14 @@ public class TimeAccumulateManager {
     }
 
     public void startInterval() {
-        interval.startInterval(20, 20, TimeUnit.MINUTES);
+        scheduler.scheduleAtFixedRate(
+                task,
+                0, 40,
+                TimeUnit.MINUTES
+        );
     }
 
     public void stopInterval() {
-        interval.stopInterval();
+        scheduler.shutdownNow();
     }
 }

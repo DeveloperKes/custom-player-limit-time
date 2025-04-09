@@ -1,14 +1,13 @@
 package net.kesgroom.cplt.managers;
 
-import net.kesgroom.cplt.services.PlayerService;
 import net.kesgroom.cplt.services.PlayerTimeService;
 import net.kesgroom.cplt.services.SessionService;
-import net.kesgroom.cplt.utils.Interval;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
 
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class TimeRemainingManager {
@@ -17,11 +16,12 @@ public class TimeRemainingManager {
     private static final PlayerTimeService playerTimeService = new PlayerTimeService();
 
     private static TimeRemainingManager instance;
-    private static final Interval interval = new Interval();
+    private final ScheduledExecutorService scheduler;
+    private final Runnable task;
 
     private TimeRemainingManager(MinecraftServer server) {
-        Runnable task = () -> checkSessions(server);
-        interval.setTask(task);
+        task = () -> checkSessions(server);
+        scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 
     public static TimeRemainingManager getInstance(MinecraftServer server) {
@@ -30,31 +30,35 @@ public class TimeRemainingManager {
     }
 
     private static void checkSessions(MinecraftServer server) {
-        System.out.println("Se ejecuta la validación de sesiones");
         List<SessionManager> playersConnect = sessionService.getSessionsConnect();
 
-        System.out.println(playersConnect);
         for (SessionManager session : playersConnect) {
             String uuid = session.getUuid();
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
 
             PlayerTimeManager timeManager = playerTimeService.getPlayerTime(uuid);
 
-            if (player != null && timeManager != null) {
-                long remainingTime = timeManager.getRemaining_time();
-                long newRemaining = remainingTime - (System.currentTimeMillis() - session.getLogin_time().getTime());
-                timeManager.setRemaining_time(newRemaining);
-                playerTimeService.updatePlayerTime(uuid, Math.max(newRemaining, 0));
-                sessionService.updateLoginTime(uuid);
-            }
+            assert player != null;
+            assert timeManager != null;
+
+            long remainingTime = timeManager.getRemaining_time();
+            long newRemaining = remainingTime - (System.currentTimeMillis() - session.getLogin_time().getTime());
+            timeManager.setRemaining_time(newRemaining);
+            playerTimeService.updatePlayerTime(uuid, Math.max(newRemaining, 0));
+            sessionService.updateLoginTime(uuid);
         }
     }
 
     public void startInterval() {
-        interval.startInterval(0, 1, TimeUnit.MINUTES);
+        scheduler.scheduleAtFixedRate(
+                task,
+                0,
+                1,
+                TimeUnit.MINUTES
+        );
     }
 
     public void stopInterval() {
-        interval.stopInterval();
+        scheduler.shutdownNow();
     }
 }

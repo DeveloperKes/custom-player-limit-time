@@ -5,17 +5,17 @@ import net.kesgroom.cplt.managers.BanIntervalManager;
 import net.kesgroom.cplt.managers.ConfigManager;
 
 public class BanEvent {
-    public static void activeIntervalForSessions() {
+    public static void activeIntervalForBanSessions() {
         ServerWorldEvents.LOAD.register((server, world) -> {
             if (ConfigManager.getInstance().getActive()) {
                 BanIntervalManager.getInstance(server).startInterval();
             }
         });
 
-//        ServerWorldEvents.UNLOAD.register((server, serverWorld) -> {
-//            if (ConfigManager.getInstance().getActive()) {
-//                BanIntervalManager.getInstance(server).stopInterval();
-//            }
-//        });
+        ServerWorldEvents.UNLOAD.register((server, serverWorld) -> {
+            if (ConfigManager.getInstance().getActive()) {
+                BanIntervalManager.getInstance(server).stopInterval();
+            }
+        });
     }
 }

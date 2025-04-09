@@ -60,6 +60,7 @@ public class PlayerTimeService {
                 PlayerTimeManager playerTimeManager = new PlayerTimeManager();
                 playerTimeManager.setUuid(rs.getString("uuid"));
                 playerTimeManager.setRemaining_time(rs.getInt("remaining_time"));
+                playerTimeManager.setName(rs.getString("name"));
 
                 playersTime.add(playerTimeManager);
             }

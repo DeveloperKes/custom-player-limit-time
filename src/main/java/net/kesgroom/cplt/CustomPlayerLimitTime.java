@@ -6,7 +6,6 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 
 import net.kesgroom.cplt.commands.RegisterCommands;
 import net.kesgroom.cplt.events.*;
-import net.kesgroom.cplt.utils.Intervals;
 
 
 public class CustomPlayerLimitTime implements ModInitializer {
@@ -22,10 +21,7 @@ public class CustomPlayerLimitTime implements ModInitializer {
         PlayerEvents.joinEvent();
         PlayerEvents.disconnectEvent();
         TimeRemainingEvent.activeIntervalForSessions();
-        TimeAccumulateEvent.activeIntervalForSessions();
-        BanEvent.activeIntervalForSessions();
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() ->
-                Intervals.getInstance().stopSchedulers()));
+//        TimeAccumulateEvent.activeIntervalForSessions();
+        BanEvent.activeIntervalForBanSessions();
     }
 }

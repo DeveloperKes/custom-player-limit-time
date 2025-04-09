@@ -43,10 +43,10 @@ public class PlayerTime implements Entity {
 
     public String getPlayersToBan() {
         return """
-                SELECT pt.id, pt.remaining_time, p.uuid, pt.last_accumulation_date, s.connect FROM player_time AS pt
+                SELECT pt.id, pt.remaining_time, p.uuid, p.name, pt.last_accumulation_date, s.connect FROM player_time AS pt
                 INNER JOIN players p ON pt.player_uuid = p.uuid
                 INNER JOIN sessions s ON pt.player_uuid = s.player_uuid
-                WHERE s.connect = 1 AND pt.remaining_time == 0
+                WHERE s.connect = 1 AND pt.remaining_time = 0
                 ORDER BY pt.id DESC
                 """;
     }

@@ -16,6 +16,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 
+import java.util.List;
+
 public class RegisterCommands {
 
     private static final ConfigService configService = new ConfigService();
@@ -127,8 +129,23 @@ public class RegisterCommands {
                     if (playerTimeManager != null) {
                         long remaining = playerTimeManager.getRemaining_time();
                         String formatted = Formats.formatRemainingTime(remaining);
-                        context.getSource().sendFeedback(() -> Text.literal(String.format("Tú tiempo de juego restante es: %s", formatted)), true);
+                        String timeStr = "";
+                        if (formatted.isEmpty())
+                            timeStr = "Tu tiempo de juego ha terminado, serás desconectado pronto.";
+                        else timeStr = String.format("Tú tiempo de juego restante es: %s", formatted);
+                        String finalTimeStr = timeStr;
+                        context.getSource().sendFeedback(() -> Text.literal(finalTimeStr), true);
                     }
+                    return 1;
+                }));
+
+        //Test commands
+
+        dispatcher.register(CommandManager.literal("getplayersban").requires(source -> source.hasPermissionLevel(4))
+                .executes(context -> {
+                    List<PlayerTimeManager> playerToBan = playerTimeService.getPlayersToBan();
+
+                    System.out.println(playerToBan);
                     return 1;
                 }));
     }
